@@ -1,4 +1,4 @@
-import { FilterType, StatusFilter } from '@/types/task';
+import { FilterType, StatusFilter, Project } from '@/types/task';
 import { Briefcase, User, AlertCircle, LayoutGrid, CheckCircle, Clock, Calendar, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,7 @@ interface FilterTabsProps {
     completed: number;
     overdue: number;
   };
+  activeProject?: Project | null;
 }
 
 export function FilterTabs({
@@ -22,13 +23,14 @@ export function FilterTabs({
   statusFilter,
   setCategoryFilter,
   setStatusFilter,
-  stats
+  stats,
+  activeProject,
 }: FilterTabsProps) {
   const categoryTabs = [
     { id: 'all' as FilterType, label: 'All', icon: LayoutGrid, count: stats.total },
-    { id: 'work' as FilterType, label: 'Work', icon: Briefcase, count: stats.work.total, colorClass: 'text-work' },
-    { id: 'personal' as FilterType, label: 'Personal', icon: User, count: stats.personal.total, colorClass: 'text-personal' },
-    { id: 'urgent' as FilterType, label: 'Urgent', icon: AlertCircle, count: stats.urgent.total, colorClass: 'text-urgent' },
+    { id: 'work' as FilterType, label: 'Work', icon: Briefcase, count: stats.work.total, colorClass: 'text-work', activeColor: 'bg-work/10 text-work ring-work/20' },
+    { id: 'personal' as FilterType, label: 'Personal', icon: User, count: stats.personal.total, colorClass: 'text-personal', activeColor: 'bg-personal/10 text-personal ring-personal/20' },
+    { id: 'urgent' as FilterType, label: 'Urgent', icon: AlertCircle, count: stats.urgent.total, colorClass: 'text-urgent', activeColor: 'bg-urgent/10 text-urgent ring-urgent/20' },
   ];
 
   const statusTabs = [
@@ -41,6 +43,16 @@ export function FilterTabs({
 
   return (
     <div className="space-y-4 mb-6">
+      {/* Active Project Badge */}
+      {activeProject && (
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg">{activeProject.icon}</span>
+          <span className="text-sm font-semibold text-foreground">{activeProject.name}</span>
+          <span className="text-xs text-muted-foreground">•</span>
+          <span className="text-xs text-muted-foreground">{stats.total} tasks</span>
+        </div>
+      )}
+
       {/* Category Tabs */}
       <div className="flex flex-wrap gap-2">
         {categoryTabs.map((tab) => {
@@ -54,15 +66,15 @@ export function FilterTabs({
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-primary/10 text-primary ring-2 ring-primary/20 scale-105"
+                  ? tab.activeColor || "bg-primary/10 text-primary ring-2 ring-primary/20 scale-105"
                   : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
-              <Icon className={cn("w-4 h-4", isActive ? "text-primary" : tab.colorClass)} />
+              <Icon className={cn("w-4 h-4", isActive ? "" : tab.colorClass)} />
               <span>{tab.label}</span>
               <span className={cn(
                 "px-2 py-0.5 rounded-full text-xs font-semibold",
-                isActive ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+                isActive ? "bg-white/20" : "bg-secondary text-muted-foreground"
               )}>
                 {tab.count}
               </span>

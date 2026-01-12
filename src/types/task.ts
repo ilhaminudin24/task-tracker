@@ -1,3 +1,16 @@
+// Project Types
+export type ProjectColor = 'emerald' | 'blue' | 'amber' | 'red' | 'purple' | 'pink';
+
+export interface Project {
+  id: string;
+  name: string;
+  color: ProjectColor;
+  icon: string;
+  description?: string;
+  createdAt: Date;
+}
+
+// Task Types
 export type TaskCategory = 'work' | 'personal' | 'urgent';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'active' | 'completed';
@@ -12,6 +25,7 @@ export interface Task {
   dueDate: Date;
   createdAt: Date;
   completedAt?: Date;
+  projectId: string;
 }
 
 export type FilterType = 'all' | 'work' | 'personal' | 'urgent';

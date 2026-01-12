@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Task } from '@/types/task';
-import { Check, Pencil, Trash2, Star, ChevronDown, ChevronUp, GripVertical, Calendar, Clock } from 'lucide-react';
+import { Task, Project, ProjectColor } from '@/types/task';
+import { Check, Pencil, Trash2, Star, ChevronDown, ChevronUp, GripVertical, Calendar, Clock, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format, isToday, isPast } from 'date-fns';
 import { Button } from '@/components/ui/button';
 
 interface TaskCardProps {
   task: Task;
+  project?: Project;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit?: (task: Task) => void;
+  onMoveToProject?: (taskId: string, projectId: string) => void;
+  projects?: Project[];
   index: number;
 }
 
@@ -43,10 +46,20 @@ const priorityConfig = {
   high: { label: 'High', class: 'text-urgent' },
 };
 
-export function TaskCard({ task, onToggle, onDelete, onEdit, index }: TaskCardProps) {
+const projectColorClasses: Record<ProjectColor, { bg: string; text: string; border: string }> = {
+  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/30' },
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/30' },
+  amber: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/30' },
+  red: { bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/30' },
+  purple: { bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/30' },
+  pink: { bg: 'bg-pink-500/10', text: 'text-pink-600', border: 'border-pink-500/30' },
+};
+
+export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToProject, projects, index }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   const category = categoryConfig[task.category];
   const priority = priorityConfig[task.priority];
@@ -67,6 +80,8 @@ export function TaskCard({ task, onToggle, onDelete, onEdit, index }: TaskCardPr
     return format(dueDate, 'MMM d');
   };
 
+  const projectColors = project ? projectColorClasses[project.color] : null;
+
   return (
     <div 
       className={cn(
@@ -78,7 +93,7 @@ export function TaskCard({ task, onToggle, onDelete, onEdit, index }: TaskCardPr
       )}
       style={{ animationDelay: `${index * 50}ms` }}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => { setIsHovered(false); setShowMoveMenu(false); }}
     >
       {/* Confetti Effect */}
       {showConfetti && (
@@ -127,6 +142,17 @@ export function TaskCard({ task, onToggle, onDelete, onEdit, index }: TaskCardPr
 
           {/* Meta Info */}
           <div className="flex flex-wrap items-center gap-2 mt-2">
+            {/* Project Badge - Largest, first */}
+            {project && projectColors && (
+              <span className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border",
+                projectColors.bg, projectColors.text, projectColors.border
+              )}>
+                <span>{project.icon}</span>
+                {project.name}
+              </span>
+            )}
+
             {/* Category Badge */}
             <span className={cn(
               "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border",
@@ -192,6 +218,40 @@ export function TaskCard({ task, onToggle, onDelete, onEdit, index }: TaskCardPr
         >
           <Pencil className="w-4 h-4 text-muted-foreground" />
         </Button>
+        
+        {/* Move to Project */}
+        {onMoveToProject && projects && projects.length > 1 && (
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowMoveMenu(!showMoveMenu)}
+              className="h-8 w-8 rounded-lg hover:bg-secondary"
+            >
+              <FolderOpen className="w-4 h-4 text-muted-foreground" />
+            </Button>
+            
+            {showMoveMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl bg-popover border border-border shadow-xl z-50 animate-scale-in">
+                <p className="px-2 py-1 text-xs text-muted-foreground font-medium">Move to:</p>
+                {projects.filter(p => p.id !== task.projectId).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      onMoveToProject(task.id, p.id);
+                      setShowMoveMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-secondary transition-colors"
+                  >
+                    <span>{p.icon}</span>
+                    <span className="truncate">{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
         <Button
           variant="ghost"
           size="icon"

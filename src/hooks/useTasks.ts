@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Task, FilterType, StatusFilter, TaskCategory, TaskPriority } from '@/types/task';
 import { mockTasks } from '@/data/mockTasks';
 
-export function useTasks() {
+export function useTasks(activeProjectId: string | null = null) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [categoryFilter, setCategoryFilter] = useState<FilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -20,8 +20,14 @@ export function useTasks() {
     return dueDate < today && status === 'active';
   };
 
+  // Tasks filtered by active project
+  const projectTasks = useMemo(() => {
+    if (!activeProjectId) return tasks;
+    return tasks.filter(task => task.projectId === activeProjectId);
+  }, [tasks, activeProjectId]);
+
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
+    return projectTasks.filter(task => {
       // Category filter
       if (categoryFilter !== 'all' && task.category !== categoryFilter) {
         return false;
@@ -41,24 +47,25 @@ export function useTasks() {
           return true;
       }
     });
-  }, [tasks, categoryFilter, statusFilter]);
+  }, [projectTasks, categoryFilter, statusFilter]);
 
   const stats = useMemo(() => {
-    const work = tasks.filter(t => t.category === 'work');
-    const personal = tasks.filter(t => t.category === 'personal');
-    const urgent = tasks.filter(t => t.category === 'urgent');
-    const today = tasks.filter(t => isToday(new Date(t.dueDate)));
+    const tasksForStats = projectTasks;
+    const work = tasksForStats.filter(t => t.category === 'work');
+    const personal = tasksForStats.filter(t => t.category === 'personal');
+    const urgent = tasksForStats.filter(t => t.category === 'urgent');
+    const today = tasksForStats.filter(t => isToday(new Date(t.dueDate)));
     
     return {
-      total: tasks.length,
-      completed: tasks.filter(t => t.status === 'completed').length,
+      total: tasksForStats.length,
+      completed: tasksForStats.filter(t => t.status === 'completed').length,
       work: { total: work.length, completed: work.filter(t => t.status === 'completed').length },
       personal: { total: personal.length, completed: personal.filter(t => t.status === 'completed').length },
       urgent: { total: urgent.length, completed: urgent.filter(t => t.status === 'completed').length },
       today: { total: today.length, completed: today.filter(t => t.status === 'completed').length },
-      overdue: tasks.filter(t => isOverdue(new Date(t.dueDate), t.status)).length,
+      overdue: tasksForStats.filter(t => isOverdue(new Date(t.dueDate), t.status)).length,
     };
-  }, [tasks]);
+  }, [projectTasks]);
 
   const completionPercentage = useMemo(() => {
     if (stats.total === 0) return 0;
@@ -84,6 +91,7 @@ export function useTasks() {
     category: TaskCategory;
     priority: TaskPriority;
     dueDate: Date;
+    projectId: string;
   }) => {
     const newTask: Task = {
       id: Date.now().toString(),
@@ -107,9 +115,24 @@ export function useTasks() {
     }));
   }, []);
 
+  const moveTaskToProject = useCallback((taskId: string, projectId: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        return { ...task, projectId };
+      }
+      return task;
+    }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setCategoryFilter('all');
+    setStatusFilter('all');
+  }, []);
+
   return {
     tasks: filteredTasks,
     allTasks: tasks,
+    projectTasks,
     stats,
     completionPercentage,
     categoryFilter,
@@ -120,5 +143,7 @@ export function useTasks() {
     addTask,
     deleteTask,
     updateTask,
+    moveTaskToProject,
+    clearFilters,
   };
 }
