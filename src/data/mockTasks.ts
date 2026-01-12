@@ -1,0 +1,136 @@
+import { Task } from '@/types/task';
+
+const today = new Date();
+const yesterday = new Date(today);
+yesterday.setDate(yesterday.getDate() - 1);
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
+const nextWeek = new Date(today);
+nextWeek.setDate(nextWeek.getDate() + 7);
+const twoDaysAgo = new Date(today);
+twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+export const mockTasks: Task[] = [
+  {
+    id: '1',
+    title: 'Complete project documentation',
+    description: 'Write comprehensive documentation for the new API endpoints including examples and error handling.',
+    category: 'work',
+    priority: 'high',
+    status: 'active',
+    dueDate: tomorrow,
+    createdAt: twoDaysAgo,
+  },
+  {
+    id: '2',
+    title: 'Review pull requests',
+    description: 'Review and merge pending PRs from the team.',
+    category: 'work',
+    priority: 'medium',
+    status: 'active',
+    dueDate: today,
+    createdAt: yesterday,
+  },
+  {
+    id: '3',
+    title: 'Team standup meeting',
+    description: 'Daily sync with the development team.',
+    category: 'work',
+    priority: 'medium',
+    status: 'completed',
+    dueDate: today,
+    createdAt: today,
+    completedAt: today,
+  },
+  {
+    id: '4',
+    title: 'Gym workout session',
+    description: 'Upper body strength training.',
+    category: 'personal',
+    priority: 'medium',
+    status: 'active',
+    dueDate: today,
+    createdAt: yesterday,
+  },
+  {
+    id: '5',
+    title: 'Fix critical production bug',
+    description: 'User authentication failing intermittently. Investigate and fix ASAP.',
+    category: 'urgent',
+    priority: 'high',
+    status: 'active',
+    dueDate: yesterday,
+    createdAt: twoDaysAgo,
+  },
+  {
+    id: '6',
+    title: 'Prepare presentation slides',
+    description: 'Q1 performance review presentation for stakeholders.',
+    category: 'work',
+    priority: 'high',
+    status: 'active',
+    dueDate: nextWeek,
+    createdAt: today,
+  },
+  {
+    id: '7',
+    title: 'Call mom',
+    description: 'Weekly catch-up call.',
+    category: 'personal',
+    priority: 'low',
+    status: 'completed',
+    dueDate: yesterday,
+    createdAt: twoDaysAgo,
+    completedAt: yesterday,
+  },
+  {
+    id: '8',
+    title: 'Deploy hotfix',
+    description: 'Deploy the authentication fix to production.',
+    category: 'urgent',
+    priority: 'high',
+    status: 'active',
+    dueDate: today,
+    createdAt: today,
+  },
+  {
+    id: '9',
+    title: 'Update dependencies',
+    description: 'Update npm packages to latest versions.',
+    category: 'work',
+    priority: 'low',
+    status: 'active',
+    dueDate: nextWeek,
+    createdAt: yesterday,
+  },
+  {
+    id: '10',
+    title: 'Book dentist appointment',
+    description: 'Schedule annual checkup.',
+    category: 'personal',
+    priority: 'medium',
+    status: 'active',
+    dueDate: tomorrow,
+    createdAt: today,
+  },
+  {
+    id: '11',
+    title: 'Write unit tests',
+    description: 'Add tests for the new payment module.',
+    category: 'work',
+    priority: 'medium',
+    status: 'active',
+    dueDate: tomorrow,
+    createdAt: yesterday,
+  },
+  {
+    id: '12',
+    title: 'Security audit response',
+    description: 'Address findings from the security audit report.',
+    category: 'urgent',
+    priority: 'high',
+    status: 'active',
+    dueDate: today,
+    createdAt: yesterday,
+  },
+];
