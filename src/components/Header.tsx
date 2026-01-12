@@ -1,5 +1,7 @@
 import { Sun, Moon, Plus, Download, Search, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ProjectSwitcher } from '@/components/ProjectSwitcher';
+import { Project } from '@/types/task';
 import { useState } from 'react';
 
 interface HeaderProps {
@@ -9,6 +11,17 @@ interface HeaderProps {
   completionPercentage: number;
   onAddTask: () => void;
   userName?: string;
+  // Project props
+  projects: Project[];
+  activeProjectId: string | null;
+  projectStats: Array<{
+    project: Project;
+    total: number;
+    completed: number;
+    percentage: number;
+  }>;
+  onSelectProject: (projectId: string | null) => void;
+  onCreateProject: () => void;
 }
 
 export function Header({
@@ -17,7 +30,12 @@ export function Header({
   totalTasks,
   completionPercentage,
   onAddTask,
-  userName = 'Task Tracker'
+  userName = 'Task Tracker',
+  projects,
+  activeProjectId,
+  projectStats,
+  onSelectProject,
+  onCreateProject,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -37,17 +55,15 @@ export function Header({
           </div>
         </div>
 
-        {/* Center: Stats (Desktop) */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-2xl bg-secondary/50">
-          <div className="flex items-center gap-1.5 text-sm">
-            <span className="font-semibold text-foreground">{totalTasks}</span>
-            <span className="text-muted-foreground">tasks</span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-1.5 text-sm">
-            <span className="font-semibold text-primary">{completionPercentage}%</span>
-            <span className="text-muted-foreground">done</span>
-          </div>
+        {/* Center: Project Switcher */}
+        <div className="hidden md:block">
+          <ProjectSwitcher
+            projects={projects}
+            activeProjectId={activeProjectId}
+            projectStats={projectStats}
+            onSelectProject={onSelectProject}
+            onCreateProject={onCreateProject}
+          />
         </div>
 
         {/* Right: Actions */}
