@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Project, ProjectColor, Task } from '@/types/task';
 import { mockProjects } from '@/data/mockProjects';
 
-export function useProjects(allTasks: Task[]) {
+export function useProjects(allTasks: Task[] = []) {
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
@@ -38,6 +38,10 @@ export function useProjects(allTasks: Task[]) {
     if (!activeProjectId) return null;
     return projectStats.find(ps => ps.project.id === activeProjectId) || null;
   }, [projectStats, activeProjectId]);
+
+  const setActiveProject = useCallback((projectId: string | null) => {
+    setActiveProjectId(projectId);
+  }, []);
 
   const addProject = useCallback((projectData: {
     name: string;
@@ -76,7 +80,7 @@ export function useProjects(allTasks: Task[]) {
     activeProject,
     projectStats,
     activeProjectStats,
-    setActiveProjectId,
+    setActiveProject,
     addProject,
     updateProject,
     deleteProject,
