@@ -6,12 +6,19 @@ import { TaskList } from '@/components/TaskList';
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { AddTaskModal } from '@/components/AddTaskModal';
 import { MobileNav } from '@/components/MobileNav';
+import { MobileProjectSheet } from '@/components/MobileProjectSheet';
+import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { useTheme } from '@/hooks/useTheme';
 import { useTasks } from '@/hooks/useTasks';
+import { useProjects } from '@/hooks/useProjects';
 import { Plus } from 'lucide-react';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
+  
+  // Initialize state for project selection
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
   const {
     tasks,
     allTasks,
@@ -24,9 +31,23 @@ const Index = () => {
     toggleTaskStatus,
     addTask,
     deleteTask,
-  } = useTasks();
+    moveTaskToProject,
+  } = useTasks(activeProjectId);
+
+  const {
+    projects,
+    activeProject,
+    projectStats,
+    addProject,
+  } = useProjects(allTasks);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+
+  const handleSelectProject = (projectId: string | null) => {
+    setActiveProjectId(projectId);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -38,6 +59,11 @@ const Index = () => {
         completionPercentage={completionPercentage}
         onAddTask={() => setIsAddModalOpen(true)}
         userName="Task Tracker"
+        projects={projects}
+        activeProjectId={activeProjectId}
+        projectStats={projectStats}
+        onSelectProject={handleSelectProject}
+        onCreateProject={() => setIsCreateProjectOpen(true)}
       />
 
       {/* Main Layout */}
@@ -47,6 +73,9 @@ const Index = () => {
           stats={stats}
           completionPercentage={completionPercentage}
           onAddTask={() => setIsAddModalOpen(true)}
+          activeProject={activeProject}
+          projectStats={projectStats}
+          onSwitchProject={() => setIsProjectSheetOpen(true)}
         />
 
         {/* Main Content */}
@@ -110,6 +139,7 @@ const Index = () => {
               setCategoryFilter={setCategoryFilter}
               setStatusFilter={setStatusFilter}
               stats={stats}
+              activeProject={activeProject}
             />
 
             {/* Content Grid */}
@@ -120,6 +150,8 @@ const Index = () => {
                   tasks={tasks}
                   onToggle={toggleTaskStatus}
                   onDelete={deleteTask}
+                  projects={projects}
+                  onMoveToProject={moveTaskToProject}
                 />
               </div>
 
@@ -144,13 +176,44 @@ const Index = () => {
       </button>
 
       {/* Mobile Bottom Navigation */}
-      <MobileNav onAddTask={() => setIsAddModalOpen(true)} />
+      <MobileNav 
+        onAddTask={() => setIsAddModalOpen(true)} 
+        onOpenProjects={() => setIsProjectSheetOpen(true)}
+      />
 
       {/* Add Task Modal */}
       <AddTaskModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={addTask}
+        projects={projects}
+        activeProjectId={activeProjectId}
+      />
+
+      {/* Mobile Project Sheet */}
+      <MobileProjectSheet
+        isOpen={isProjectSheetOpen}
+        onClose={() => setIsProjectSheetOpen(false)}
+        projects={projects}
+        activeProjectId={activeProjectId}
+        projectStats={projectStats}
+        onSelectProject={(id) => {
+          handleSelectProject(id);
+          setIsProjectSheetOpen(false);
+        }}
+        onCreateProject={() => {
+          setIsProjectSheetOpen(false);
+          setIsCreateProjectOpen(true);
+        }}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+      />
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={isCreateProjectOpen}
+        onClose={() => setIsCreateProjectOpen(false)}
+        onCreateProject={addProject}
       />
     </div>
   );
