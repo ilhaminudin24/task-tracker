@@ -21,6 +21,20 @@
   <meta name="twitter:description" content="Beautiful and intuitive task management application." />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="icon" href="/favicon.ico" />
+
+  <!-- SPA Redirect Handler for GitHub Pages -->
+  <script>
+    (function () {
+      // Handle redirect from 404.html
+      var params = new URLSearchParams(window.location.search);
+      var path = params.get('p');
+      if (path) {
+        // Decode and restore the original path
+        var decodedPath = decodeURIComponent(path);
+        window.history.replaceState(null, '', decodedPath);
+      }
+    })();
+  </script>
 </head>
 
 <body>

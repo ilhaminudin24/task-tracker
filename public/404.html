@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Task Tracker</title>
+    <script>
+        // SPA Redirect Script for GitHub Pages
+        // This script runs on 404 pages and redirects to index.html
+        // while preserving the intended path
+        (function () {
+            var path = window.location.pathname;
+            var search = window.location.search;
+            var hash = window.location.hash;
+
+            // Redirect to index with path as query parameter
+            var newUrl = '/?p=' + encodeURIComponent(path + search + hash);
+            window.location.replace(newUrl);
+        })();
+    </script>
+</head>
+
+<body>
+    <noscript>
+        <p>This app requires JavaScript to run.</p>
+    </noscript>
+</body>
+
+</html>
