@@ -1,10 +1,46 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Project, ProjectColor, Task } from '@/types/task';
-import { mockProjects } from '@/data/mockProjects';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  subscribeToProjects,
+  addProject as addProjectToFirestore,
+  updateProject as updateProjectInFirestore,
+  deleteProject as deleteProjectFromFirestore,
+  CreateProjectData,
+} from '@/services/firebaseProjects';
 
 export function useProjects(allTasks: Task[] = []) {
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Subscribe to Firestore projects
+  useEffect(() => {
+    if (!user) {
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const unsubscribe = subscribeToProjects(
+      user.uid,
+      (fetchedProjects) => {
+        setProjects(fetchedProjects);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error('Error fetching projects:', err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   const activeProject = useMemo(() => {
     if (!activeProjectId) return null;
@@ -43,36 +79,69 @@ export function useProjects(allTasks: Task[] = []) {
     setActiveProjectId(projectId);
   }, []);
 
-  const addProject = useCallback((projectData: {
-    name: string;
-    color: ProjectColor;
-    icon: string;
-    description?: string;
-  }) => {
-    const newProject: Project = {
-      id: `proj-${Date.now()}`,
+  const addProject = useCallback(async (projectData: CreateProjectData) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const tempProject: Project = {
+      id: tempId,
       ...projectData,
       createdAt: new Date(),
     };
-    setProjects(prev => [...prev, newProject]);
-    return newProject;
-  }, []);
+    setProjects(prev => [tempProject, ...prev]);
 
-  const updateProject = useCallback((projectId: string, updates: Partial<Project>) => {
+    try {
+      const newId = await addProjectToFirestore(user.uid, projectData);
+      // Real ID will be set by onSnapshot listener
+      return { ...tempProject, id: newId };
+    } catch (error) {
+      // Rollback on error
+      setProjects(prev => prev.filter(p => p.id !== tempId));
+      throw error;
+    }
+  }, [user]);
+
+  const updateProject = useCallback(async (projectId: string, updates: Partial<Project>) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
     setProjects(prev => prev.map(project => {
       if (project.id === projectId) {
         return { ...project, ...updates };
       }
       return project;
     }));
-  }, []);
 
-  const deleteProject = useCallback((projectId: string) => {
+    try {
+      await updateProjectInFirestore(user.uid, projectId, updates);
+    } catch (error) {
+      // Refresh on error (onSnapshot will restore correct state)
+      console.error('Failed to update project:', error);
+      throw error;
+    }
+  }, [user]);
+
+  const deleteProject = useCallback(async (projectId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
+    const deletedProject = projects.find(p => p.id === projectId);
     setProjects(prev => prev.filter(p => p.id !== projectId));
     if (activeProjectId === projectId) {
       setActiveProjectId(null);
     }
-  }, [activeProjectId]);
+
+    try {
+      await deleteProjectFromFirestore(user.uid, projectId);
+    } catch (error) {
+      // Rollback on error
+      if (deletedProject) {
+        setProjects(prev => [...prev, deletedProject]);
+      }
+      throw error;
+    }
+  }, [user, projects, activeProjectId]);
 
   return {
     projects,
@@ -80,6 +149,8 @@ export function useProjects(allTasks: Task[] = []) {
     activeProject,
     projectStats,
     activeProjectStats,
+    loading,
+    error,
     setActiveProject,
     addProject,
     updateProject,

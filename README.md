@@ -1,73 +1,124 @@
-# Welcome to your Lovable project
+# Task Tracker
 
-## Project info
+A beautiful and intuitive task management application built with React, TypeScript, and modern web technologies.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![Task Tracker](https://img.shields.io/badge/React-18.3.1-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue) ![Vite](https://img.shields.io/badge/Vite-5.4-purple) ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-cyan)
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+- **📋 Task Management** - Create, edit, delete, and organize tasks with ease
+- **🏷️ Categories** - Organize tasks by Work, Personal, or Urgent categories
+- **⭐ Priority Levels** - Set Low, Medium, or High priority for each task
+- **📅 Due Dates** - Track deadlines with an intuitive calendar widget
+- **📁 Projects** - Group tasks into projects for better organization
+- **🌓 Dark Mode** - Beautiful light and dark themes
+- **💾 Persistent Storage** - Data is saved to localStorage and persists across sessions
+- **📱 Responsive Design** - Works seamlessly on desktop and mobile devices
 
-**Use Lovable**
+## 🛠️ Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+| Technology | Purpose |
+|------------|---------|
+| **React 18** | UI Framework |
+| **TypeScript** | Type Safety |
+| **Vite** | Build Tool |
+| **Tailwind CSS** | Styling |
+| **shadcn/ui** | UI Components |
+| **React Router** | Routing |
+| **React Query** | Server State Management |
+| **date-fns** | Date Utilities |
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 18+ 
+- npm or yarn
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd task-tracker
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Install dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Build for Production
 
-**Use GitHub Codespaces**
+```bash
+npm run build
+npm run preview
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📁 Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/        # React components
+│   ├── ui/           # shadcn/ui components
+│   ├── Header.tsx    # App header with navigation
+│   ├── TaskCard.tsx  # Individual task display
+│   └── ...
+├── hooks/            # Custom React hooks
+│   ├── useTasks.ts   # Task state management with localStorage
+│   ├── useProjects.ts # Project state management with localStorage
+│   └── useTheme.ts   # Theme toggle
+├── data/             # Mock/seed data
+├── types/            # TypeScript type definitions
+├── pages/            # Page components
+└── lib/              # Utility functions
+```
 
-This project is built with:
+## 💾 Data Persistence
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Tasks and projects are automatically saved to `localStorage`:
 
-## How can I deploy this project?
+- **Tasks**: Stored under key `task-tracker-tasks-data`
+- **Projects**: Stored under key `task-tracker-projects-data`
+- **Theme**: Stored under key `theme`
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Data persists across browser sessions. To reset to default data, clear your browser's localStorage.
 
-## Can I connect a custom domain to my Lovable project?
+## 🎨 Customization
 
-Yes, you can!
+### Theming
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+The app uses CSS custom properties for theming. Customize colors in `src/index.css`:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```css
+:root {
+  --primary: 160 84% 39%;      /* Emerald green */
+  --work: 217 91% 60%;         /* Blue for work tasks */
+  --personal: 38 92% 50%;      /* Amber for personal tasks */
+  --urgent: 0 84% 60%;         /* Red for urgent tasks */
+}
+```
+
+## 📝 Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+---
+
+Built with ❤️ using React and TypeScript

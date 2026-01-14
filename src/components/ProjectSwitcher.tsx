@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Project, ProjectColor } from '@/types/task';
-import { ChevronDown, Plus, Check, FolderOpen } from 'lucide-react';
+import { ChevronDown, Plus, Check, FolderOpen, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProjectSwitcherProps {
@@ -14,6 +14,7 @@ interface ProjectSwitcherProps {
   }>;
   onSelectProject: (projectId: string | null) => void;
   onCreateProject: () => void;
+  onEditProject?: (project: Project) => void;
 }
 
 const colorClasses: Record<ProjectColor, { bg: string; ring: string; text: string }> = {
@@ -31,6 +32,7 @@ export function ProjectSwitcher({
   projectStats,
   onSelectProject,
   onCreateProject,
+  onEditProject,
 }: ProjectSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -131,7 +133,7 @@ export function ProjectSwitcher({
                     setIsOpen(false);
                   }}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                    "group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                     isActive
                       ? `bg-gradient-to-r from-${project.color}-500/10 to-transparent ring-2 ${colors.ring} scale-[1.02]`
                       : "hover:bg-secondary hover:translate-x-1"
@@ -157,6 +159,19 @@ export function ProjectSwitcher({
                     </div>
                   </div>
                   {isActive && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
+                  {onEditProject && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditProject(project);
+                        setIsOpen(false);
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Edit project"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  )}
                 </button>
               );
             })}

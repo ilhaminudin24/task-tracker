@@ -1,8 +1,10 @@
-import { Sun, Moon, Plus, Download, Search, Menu, X } from 'lucide-react';
+import { Sun, Moon, Plus, Download, Search, Menu, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { Project } from '@/types/task';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   theme: 'light' | 'dark';
@@ -22,6 +24,8 @@ interface HeaderProps {
   }>;
   onSelectProject: (projectId: string | null) => void;
   onCreateProject: () => void;
+  onEditProject?: (project: Project) => void;
+  onSearch?: () => void;
 }
 
 export function Header({
@@ -36,16 +40,32 @@ export function Header({
   projectStats,
   onSelectProject,
   onCreateProject,
+  onEditProject,
+  onSearch,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out successfully');
+    } catch (error) {
+      toast.error('Failed to sign out');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Left: Logo & Name */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-emerald-400 shadow-glow">
-            <span className="text-lg font-bold text-primary-foreground">T</span>
+          <div className="h-10 w-10 overflow-hidden rounded-xl shadow-glow transition-transform hover:scale-105">
+            <img
+              src="/favicon.png"
+              alt="Task Tracker Logo"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="hidden sm:block">
             <h1 className="text-lg font-semibold text-foreground">{userName}</h1>
@@ -63,6 +83,7 @@ export function Header({
             projectStats={projectStats}
             onSelectProject={onSelectProject}
             onCreateProject={onCreateProject}
+            onEditProject={onEditProject}
           />
         </div>
 
@@ -72,6 +93,7 @@ export function Header({
           <Button
             variant="ghost"
             size="icon"
+            onClick={onSearch}
             className="hidden sm:flex h-10 w-10 rounded-xl hover:bg-secondary"
           >
             <Search className="h-5 w-5 text-muted-foreground" />
@@ -108,6 +130,19 @@ export function Header({
               <Sun className="h-5 w-5 text-amber-400 transition-transform hover:rotate-45" />
             )}
           </Button>
+
+          {/* Logout Button - Desktop */}
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="hidden sm:flex h-10 w-10 rounded-xl hover:bg-destructive/10"
+              title="Sign out"
+            >
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          )}
 
           {/* Mobile Menu Toggle */}
           <Button
@@ -147,6 +182,16 @@ export function Header({
               <Plus className="h-5 w-5" />
               Add New Task
             </Button>
+            {user && (
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="w-full h-12 gap-2 rounded-xl"
+              >
+                <LogOut className="h-5 w-5" />
+                Sign Out
+              </Button>
+            )}
           </div>
         </div>
       )}

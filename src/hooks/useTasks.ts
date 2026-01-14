@@ -1,11 +1,51 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Task, FilterType, StatusFilter, TaskCategory, TaskPriority } from '@/types/task';
-import { mockTasks } from '@/data/mockTasks';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  subscribeToTasks,
+  addTask as addTaskToFirestore,
+  updateTask as updateTaskInFirestore,
+  deleteTask as deleteTaskFromFirestore,
+  toggleTaskStatus as toggleTaskStatusInFirestore,
+  moveTaskToProject as moveTaskToProjectInFirestore,
+  CreateTaskData,
+} from '@/services/firebaseTasks';
 
 export function useTasks(activeProjectId: string | null = null) {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<FilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Subscribe to Firestore tasks
+  useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    // Subscribe to ALL tasks (not filtered by project) so we can compute stats
+    const unsubscribe = subscribeToTasks(
+      user.uid,
+      (fetchedTasks) => {
+        setTasks(fetchedTasks);
+        setLoading(false);
+        setError(null);
+      },
+      null, // No project filter - get all tasks
+      (err) => {
+        console.error('Error fetching tasks:', err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   const isToday = (date: Date) => {
     const today = new Date();
@@ -55,7 +95,7 @@ export function useTasks(activeProjectId: string | null = null) {
     const personal = tasksForStats.filter(t => t.category === 'personal');
     const urgent = tasksForStats.filter(t => t.category === 'urgent');
     const today = tasksForStats.filter(t => isToday(new Date(t.dueDate)));
-    
+
     return {
       total: tasksForStats.length,
       completed: tasksForStats.filter(t => t.status === 'completed').length,
@@ -72,20 +112,34 @@ export function useTasks(activeProjectId: string | null = null) {
     return Math.round((stats.completed / stats.total) * 100);
   }, [stats]);
 
-  const toggleTaskStatus = useCallback((taskId: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
+  const toggleTaskStatus = useCallback(async (taskId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Optimistic update
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
         return {
-          ...task,
-          status: task.status === 'active' ? 'completed' : 'active',
-          completedAt: task.status === 'active' ? new Date() : undefined,
+          ...t,
+          status: t.status === 'active' ? 'completed' : 'active',
+          completedAt: t.status === 'active' ? new Date() : undefined,
         };
       }
-      return task;
+      return t;
     }));
-  }, []);
 
-  const addTask = useCallback((taskData: {
+    try {
+      await toggleTaskStatusInFirestore(user.uid, taskId, task.status);
+    } catch (error) {
+      // Rollback handled by onSnapshot
+      console.error('Failed to toggle task status:', error);
+      throw error;
+    }
+  }, [user, tasks]);
+
+  const addTask = useCallback(async (taskData: {
     title: string;
     description?: string;
     category: TaskCategory;
@@ -93,36 +147,83 @@ export function useTasks(activeProjectId: string | null = null) {
     dueDate: Date;
     projectId: string;
   }) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: tempId,
       ...taskData,
       status: 'active',
       createdAt: new Date(),
     };
     setTasks(prev => [newTask, ...prev]);
-  }, []);
 
-  const deleteTask = useCallback((taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
-  }, []);
+    try {
+      await addTaskToFirestore(user.uid, taskData as CreateTaskData);
+      // Real data will be set by onSnapshot listener
+    } catch (error) {
+      // Rollback on error
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+      throw error;
+    }
+  }, [user]);
 
-  const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        return { ...task, ...updates };
+  const deleteTask = useCallback(async (taskId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
+    const deletedTask = tasks.find(t => t.id === taskId);
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+
+    try {
+      await deleteTaskFromFirestore(user.uid, taskId);
+    } catch (error) {
+      // Rollback on error
+      if (deletedTask) {
+        setTasks(prev => [...prev, deletedTask]);
       }
-      return task;
-    }));
-  }, []);
+      throw error;
+    }
+  }, [user, tasks]);
 
-  const moveTaskToProject = useCallback((taskId: string, projectId: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        return { ...task, projectId };
+  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return { ...t, ...updates };
       }
-      return task;
+      return t;
     }));
-  }, []);
+
+    try {
+      await updateTaskInFirestore(user.uid, taskId, updates);
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      throw error;
+    }
+  }, [user]);
+
+  const moveTaskToProject = useCallback(async (taskId: string, projectId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Optimistic update
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return { ...t, projectId };
+      }
+      return t;
+    }));
+
+    try {
+      await moveTaskToProjectInFirestore(user.uid, taskId, projectId);
+    } catch (error) {
+      console.error('Failed to move task:', error);
+      throw error;
+    }
+  }, [user]);
 
   const clearFilters = useCallback(() => {
     setCategoryFilter('all');
@@ -137,6 +238,8 @@ export function useTasks(activeProjectId: string | null = null) {
     completionPercentage,
     categoryFilter,
     statusFilter,
+    loading,
+    error,
     setCategoryFilter,
     setStatusFilter,
     toggleTaskStatus,

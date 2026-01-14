@@ -5,17 +5,22 @@ import { FilterTabs } from '@/components/FilterTabs';
 import { TaskList } from '@/components/TaskList';
 import { CalendarWidget } from '@/components/CalendarWidget';
 import { AddTaskModal } from '@/components/AddTaskModal';
+import { EditTaskModal } from '@/components/EditTaskModal';
+import { EditProjectModal } from '@/components/EditProjectModal';
 import { MobileNav } from '@/components/MobileNav';
 import { MobileProjectSheet } from '@/components/MobileProjectSheet';
 import { CreateProjectModal } from '@/components/CreateProjectModal';
+import { MigrationModal } from '@/components/MigrationModal';
+import { SearchModal } from '@/components/SearchModal';
 import { useTheme } from '@/hooks/useTheme';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
+import { Task, Project } from '@/types/task';
 import { Plus } from 'lucide-react';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
-  
+
   // Initialize state for project selection
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
@@ -31,6 +36,7 @@ const Index = () => {
     toggleTaskStatus,
     addTask,
     deleteTask,
+    updateTask,
     moveTaskToProject,
   } = useTasks(activeProjectId);
 
@@ -39,11 +45,49 @@ const Index = () => {
     activeProject,
     projectStats,
     addProject,
+    updateProject,
+    deleteProject,
   } = useProjects(allTasks);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveTask = async (taskId: string, updates: Partial<Task>) => {
+    await updateTask(taskId, updates);
+    setIsEditModalOpen(false);
+    setEditingTask(null);
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setIsEditProjectModalOpen(true);
+  };
+
+  const handleSaveProject = async (projectId: string, updates: Partial<Project>) => {
+    await updateProject(projectId, updates);
+    setIsEditProjectModalOpen(false);
+    setEditingProject(null);
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    await deleteProject(projectId);
+    if (activeProjectId === projectId) {
+      setActiveProjectId(null);
+    }
+    setIsEditProjectModalOpen(false);
+    setEditingProject(null);
+  };
 
   const handleSelectProject = (projectId: string | null) => {
     setActiveProjectId(projectId);
@@ -64,6 +108,8 @@ const Index = () => {
         projectStats={projectStats}
         onSelectProject={handleSelectProject}
         onCreateProject={() => setIsCreateProjectOpen(true)}
+        onEditProject={handleEditProject}
+        onSearch={() => setIsSearchOpen(true)}
       />
 
       {/* Main Layout */}
@@ -150,6 +196,7 @@ const Index = () => {
                   tasks={tasks}
                   onToggle={toggleTaskStatus}
                   onDelete={deleteTask}
+                  onEdit={handleEditTask}
                   projects={projects}
                   onMoveToProject={moveTaskToProject}
                 />
@@ -176,8 +223,8 @@ const Index = () => {
       </button>
 
       {/* Mobile Bottom Navigation */}
-      <MobileNav 
-        onAddTask={() => setIsAddModalOpen(true)} 
+      <MobileNav
+        onAddTask={() => setIsAddModalOpen(true)}
         onOpenProjects={() => setIsProjectSheetOpen(true)}
       />
 
@@ -210,10 +257,46 @@ const Index = () => {
       />
 
       {/* Create Project Modal */}
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={isEditModalOpen}
+        task={editingTask}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingTask(null);
+        }}
+        onSave={handleSaveTask}
+        projects={projects}
+      />
+
+      {/* Create Project Modal */}
       <CreateProjectModal
         isOpen={isCreateProjectOpen}
         onClose={() => setIsCreateProjectOpen(false)}
         onCreateProject={addProject}
+      />
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        isOpen={isEditProjectModalOpen}
+        project={editingProject}
+        onClose={() => {
+          setIsEditProjectModalOpen(false);
+          setEditingProject(null);
+        }}
+        onSave={handleSaveProject}
+        onDelete={handleDeleteProject}
+      />
+
+      {/* Migration Modal - shows on first login with localStorage data */}
+      <MigrationModal />
+
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        tasks={allTasks}
+        onSelectTask={handleEditTask}
       />
     </div>
   );
