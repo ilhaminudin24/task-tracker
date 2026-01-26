@@ -12,11 +12,15 @@ import { MobileProjectSheet } from '@/components/MobileProjectSheet';
 import { CreateProjectModal } from '@/components/CreateProjectModal';
 import { MigrationModal } from '@/components/MigrationModal';
 import { SearchModal } from '@/components/SearchModal';
+import { KanbanBoard } from '@/components/KanbanBoard';
 import { useTheme } from '@/hooks/useTheme';
 import { useTasks } from '@/hooks/useTasks';
+import { useKanban } from '@/hooks/useKanban';
+import { updateTaskStatus } from '@/services/firebaseKanban';
 import { useProjects } from '@/hooks/useProjects';
 import { Task, Project } from '@/types/task';
 import { Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -48,6 +52,16 @@ const Index = () => {
     updateProject,
     deleteProject,
   } = useProjects(allTasks);
+
+  const {
+    columns,
+    addColumn,
+    updateColumn,
+    deleteColumn,
+    moveColumn,
+  } = useKanban();
+
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -126,7 +140,10 @@ const Index = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-          <div className="max-w-4xl mx-auto">
+          <div className={cn(
+            "mx-auto transition-all duration-300",
+            viewMode === 'list' ? "max-w-4xl" : "max-w-full"
+          )}>
             {/* Hero Section - Mobile */}
             <div className="lg:hidden mb-6 p-6 rounded-2xl glass-card">
               <div className="flex items-center gap-4">
@@ -186,28 +203,70 @@ const Index = () => {
               setStatusFilter={setStatusFilter}
               stats={stats}
               activeProject={activeProject}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
             />
 
             {/* Content Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* Task List */}
-              <div className="xl:col-span-2">
-                <TaskList
-                  tasks={tasks}
-                  onToggle={toggleTaskStatus}
-                  onDelete={deleteTask}
-                  onEdit={handleEditTask}
-                  projects={projects}
-                  onMoveToProject={moveTaskToProject}
-                />
-              </div>
+            <div className={cn(
+              "grid gap-6 transition-all duration-300",
+              viewMode === 'list' ? "grid-cols-1 xl:grid-cols-3" : "grid-cols-1"
+            )}>
+              {viewMode === 'list' ? (
+                <>
+                  {/* Task List */}
+                  <div className="xl:col-span-2">
+                    <TaskList
+                      tasks={tasks}
+                      onToggle={toggleTaskStatus}
+                      onDelete={deleteTask}
+                      onEdit={handleEditTask}
+                      projects={projects}
+                      onMoveToProject={moveTaskToProject}
+                    />
+                  </div>
 
-              {/* Calendar Widget - Desktop */}
-              <div className="hidden xl:block">
-                <div className="sticky top-24">
-                  <CalendarWidget tasks={allTasks} />
+                  {/* Calendar Widget - Desktop */}
+                  <div className="hidden xl:block">
+                    <div className="sticky top-24">
+                      <CalendarWidget tasks={allTasks} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="h-[calc(100vh-16rem)] overflow-hidden">
+                  <KanbanBoard
+                    tasks={tasks}
+                    projects={projects}
+                    columns={columns}
+                    onAddColumn={addColumn}
+                    onUpdateColumn={updateColumn}
+                    onDeleteColumn={deleteColumn}
+                    onMoveColumn={moveColumn}
+                    onToggleTask={toggleTaskStatus}
+                    onDeleteTask={deleteTask}
+                    onEditTask={handleEditTask}
+                    onMoveTaskToProject={moveTaskToProject}
+                    onTaskDragEnd={async (activeId, overId, activeColumnId, overColumnId) => {
+                      // If status changed
+                      if (activeColumnId !== overColumnId) {
+                        // Optimistic / Fire & Forget (handled by sub-component or hook usually, but here we invoke service directly or via hook)
+                        if (activeProjectId) {
+                          // If we are in project view, we just update status
+                          // The user might be reordering in the same column? 
+                          // Board supports drag between columns, so status update is implied.
+                        }
+                        // We can use updateTask from useTasks, or updateTaskStatus from firebaseKanban
+                        // using useTasks generic update
+                        await updateTask(activeId, {
+                          status: overColumnId,
+                          completedAt: (overColumnId === 'done' || overColumnId === 'completed') ? new Date() : null
+                        });
+                      }
+                    }}
+                  />
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </main>

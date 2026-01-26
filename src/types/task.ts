@@ -13,7 +13,13 @@ export interface Project {
 // Task Types
 export type TaskCategory = 'work' | 'personal' | 'urgent';
 export type TaskPriority = 'low' | 'medium' | 'high';
-export type TaskStatus = 'active' | 'completed';
+export type TaskStatus = string;
+
+export interface Column {
+  id: string;
+  title: string;
+  order: number;
+}
 
 export interface Task {
   id: string;

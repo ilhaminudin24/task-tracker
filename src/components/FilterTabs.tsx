@@ -1,5 +1,5 @@
 import { FilterType, StatusFilter, Project } from '@/types/task';
-import { Briefcase, User, AlertCircle, LayoutGrid, CheckCircle, Clock, Calendar, AlertTriangle } from 'lucide-react';
+import { Briefcase, User, AlertCircle, LayoutGrid, CheckCircle, Clock, Calendar, AlertTriangle, List, Columns } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FilterTabsProps {
@@ -16,6 +16,8 @@ interface FilterTabsProps {
     overdue: number;
   };
   activeProject?: Project | null;
+  viewMode: 'list' | 'board';
+  setViewMode: (mode: 'list' | 'board') => void;
 }
 
 export function FilterTabs({
@@ -25,6 +27,8 @@ export function FilterTabs({
   setStatusFilter,
   stats,
   activeProject,
+  viewMode,
+  setViewMode,
 }: FilterTabsProps) {
   const categoryTabs = [
     { id: 'all' as FilterType, label: 'All', icon: LayoutGrid, count: stats.total },
@@ -58,7 +62,7 @@ export function FilterTabs({
         {categoryTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = categoryFilter === tab.id;
-          
+
           return (
             <button
               key={tab.id}
@@ -89,7 +93,7 @@ export function FilterTabs({
         {statusTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = statusFilter === tab.id;
-          
+
           return (
             <button
               key={tab.id}
@@ -114,6 +118,30 @@ export function FilterTabs({
             </button>
           );
         })}
+      </div>
+
+      {/* View Toggle - Only show on desktop for now or simple toggle */}
+      <div className="flex justify-end pt-2">
+        <div className="bg-secondary/50 p-1 rounded-lg flex items-center gap-1">
+          <button
+            onClick={() => setViewMode('list')}
+            className={cn(
+              "p-1.5 rounded-md transition-all",
+              viewMode === 'list' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <List className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('board')}
+            className={cn(
+              "p-1.5 rounded-md transition-all",
+              viewMode === 'board' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Columns className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

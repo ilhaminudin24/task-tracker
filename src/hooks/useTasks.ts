@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Task, FilterType, StatusFilter, TaskCategory, TaskPriority } from '@/types/task';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Task, FilterType, StatusFilter, TaskCategory, TaskPriority, TaskStatus } from '@/types/task';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   subscribeToTasks,
@@ -74,23 +74,26 @@ export function useTasks(activeProjectId: string | null = null) {
       }
 
       // Status filter
-      switch (statusFilter) {
-        case 'active':
-          return task.status === 'active';
-        case 'completed':
-          return task.status === 'completed';
-        case 'today':
-          return isToday(new Date(task.dueDate));
-        case 'overdue':
-          return isOverdue(new Date(task.dueDate), task.status);
-        default:
-          return true;
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'active' && (task.status === 'completed' || task.status === 'done')) {
+          return false;
+        }
+        if (statusFilter === 'completed' && !(task.status === 'completed' || task.status === 'done')) {
+          return false;
+        }
       }
+
+      return true;
     });
   }, [projectTasks, categoryFilter, statusFilter]);
 
+  const tasksForStats = useMemo(() => {
+    // If activeProjectId is set, stats are for the current project. Otherwise, for all tasks.
+    return activeProjectId ? projectTasks : tasks;
+  }, [activeProjectId, projectTasks, tasks]);
+
   const stats = useMemo(() => {
-    const tasksForStats = projectTasks;
+    const completed = tasksForStats.filter(t => t.status === 'completed' || t.status === 'done');
     const work = tasksForStats.filter(t => t.category === 'work');
     const personal = tasksForStats.filter(t => t.category === 'personal');
     const urgent = tasksForStats.filter(t => t.category === 'urgent');
@@ -98,11 +101,11 @@ export function useTasks(activeProjectId: string | null = null) {
 
     return {
       total: tasksForStats.length,
-      completed: tasksForStats.filter(t => t.status === 'completed').length,
-      work: { total: work.length, completed: work.filter(t => t.status === 'completed').length },
-      personal: { total: personal.length, completed: personal.filter(t => t.status === 'completed').length },
-      urgent: { total: urgent.length, completed: urgent.filter(t => t.status === 'completed').length },
-      today: { total: today.length, completed: today.filter(t => t.status === 'completed').length },
+      completed: completed.length,
+      work: { total: work.length, completed: work.filter(t => t.status === 'completed' || t.status === 'done').length },
+      personal: { total: personal.length, completed: personal.filter(t => t.status === 'completed' || t.status === 'done').length },
+      urgent: { total: urgent.length, completed: urgent.filter(t => t.status === 'completed' || t.status === 'done').length },
+      today: { total: today.length, completed: today.filter(t => t.status === 'completed' || t.status === 'done').length },
       overdue: tasksForStats.filter(t => isOverdue(new Date(t.dueDate), t.status)).length,
     };
   }, [projectTasks]);
@@ -112,29 +115,37 @@ export function useTasks(activeProjectId: string | null = null) {
     return Math.round((stats.completed / stats.total) * 100);
   }, [stats]);
 
+  /* 
+   * @deprecated Use updateTask instead for granular status updates. 
+   * This is kept for backward compatibility with TaskList/TaskCard until fully migrated.
+   * Maps 'active'/'todo' -> 'done' and 'done'/'completed' -> 'todo'
+   */
   const toggleTaskStatus = useCallback(async (taskId: string) => {
     if (!user) throw new Error('User not authenticated');
 
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
+    const isCompleted = task.status === 'completed' || task.status === 'done';
+    const newStatus = isCompleted ? 'todo' : 'done';
+
     // Optimistic update
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
         return {
           ...t,
-          status: t.status === 'active' ? 'completed' : 'active',
-          completedAt: t.status === 'active' ? new Date() : undefined,
+          status: newStatus,
+          completedAt: !isCompleted ? new Date() : undefined,
         };
       }
       return t;
     }));
 
     try {
-      await toggleTaskStatusInFirestore(user.uid, taskId, task.status);
+      await updateTaskInFirestore(user.uid, taskId, { status: newStatus, completedAt: !isCompleted ? new Date() : null });
     } catch (error) {
-      // Rollback handled by onSnapshot
       console.error('Failed to toggle task status:', error);
+      // Revert optimistic update? For now, we rely on subscription to fix it if it fails.
       throw error;
     }
   }, [user, tasks]);
