@@ -17,23 +17,23 @@ interface TaskCardProps {
 }
 
 const categoryConfig = {
-  work: { 
-    label: 'Work', 
-    bgClass: 'bg-work/10', 
+  work: {
+    label: 'Work',
+    bgClass: 'bg-work/10',
     textClass: 'text-work',
     borderClass: 'border-work/30',
     icon: '💼'
   },
-  personal: { 
-    label: 'Personal', 
-    bgClass: 'bg-personal/10', 
+  personal: {
+    label: 'Personal',
+    bgClass: 'bg-personal/10',
     textClass: 'text-personal',
     borderClass: 'border-personal/30',
     icon: '👤'
   },
-  urgent: { 
-    label: 'Urgent', 
-    bgClass: 'bg-urgent/10', 
+  urgent: {
+    label: 'Urgent',
+    bgClass: 'bg-urgent/10',
     textClass: 'text-urgent',
     borderClass: 'border-urgent/30',
     icon: '🚨'
@@ -63,7 +63,7 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
 
   const category = categoryConfig[task.category];
   const priority = priorityConfig[task.priority];
-  const isCompleted = task.status === 'completed';
+  const isCompleted = task.status === 'completed' || task.status === 'done';
   const dueDate = new Date(task.dueDate);
   const isOverdue = isPast(dueDate) && !isToday(dueDate) && !isCompleted;
 
@@ -83,7 +83,7 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
   const projectColors = project ? projectColorClasses[project.color] : null;
 
   return (
-    <div 
+    <div
       className={cn(
         "group relative p-4 rounded-2xl border transition-all duration-300",
         "bg-card hover:bg-card/80",
@@ -114,8 +114,8 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
           className={cn(
             "flex-shrink-0 w-6 h-6 rounded-full border-2 transition-all duration-300",
             "flex items-center justify-center",
-            isCompleted 
-              ? "bg-primary border-primary" 
+            isCompleted
+              ? "bg-primary border-primary"
               : "border-muted-foreground/30 hover:border-primary hover:scale-110"
           )}
         >
@@ -133,7 +133,7 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
             )}>
               {task.title}
             </h3>
-            
+
             {/* Priority Star */}
             {task.priority === 'high' && (
               <Star className="w-4 h-4 text-personal fill-personal flex-shrink-0" />
@@ -218,7 +218,7 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
         >
           <Pencil className="w-4 h-4 text-muted-foreground" />
         </Button>
-        
+
         {/* Move to Project */}
         {onMoveToProject && projects && projects.length > 1 && (
           <div className="relative">
@@ -230,7 +230,7 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
             >
               <FolderOpen className="w-4 h-4 text-muted-foreground" />
             </Button>
-            
+
             {showMoveMenu && (
               <div className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl bg-popover border border-border shadow-xl z-50 animate-scale-in">
                 <p className="px-2 py-1 text-xs text-muted-foreground font-medium">Move to:</p>
@@ -251,7 +251,7 @@ export function TaskCard({ task, project, onToggle, onDelete, onEdit, onMoveToPr
             )}
           </div>
         )}
-        
+
         <Button
           variant="ghost"
           size="icon"
